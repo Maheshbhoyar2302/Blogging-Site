@@ -7,7 +7,7 @@ const validator = require("../utils/validator");
 const allBlogs = async function (req, res) {
   try {
     let { authorId, category, tags, subcategory } = req.query;
-    console.log(tags);
+    // console.log(tags);
     let query = {};
     if (authorId != null) query.authorId = authorId;
     if (category != null) query.category = category;

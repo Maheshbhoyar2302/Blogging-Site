@@ -163,7 +163,6 @@ const deleteBlogByQuery = async function (req, res) {
   try {
     const filterQuery = {
       isDeleted: false,
-      deletedAt: null,
     };
     const queryParams = req.query;
 
@@ -174,10 +173,16 @@ const deleteBlogByQuery = async function (req, res) {
       });
     }
 
-    const { authorId, category, tags, subcategory } = queryParams;
+    const { authorId, category, tags, subcategory, isPublished } = queryParams;
 
-    if (validator.isValid(authorId) && validator.isValidObjectId(authorId)) {
+    if (
+      validator.isValid(authorId) &&
+      validator.isValidObjectId(authorId) &&
+      authorId === req["x-api-key"].authorId
+    ) {
       filterQuery["authorId"] = authorId;
+    } else {
+      filterQuery["authorId"] = req["x-api-key"].authorId;
     }
     if (validator.isValid(category)) {
       filterQuery["category"] = category;
@@ -188,9 +193,21 @@ const deleteBlogByQuery = async function (req, res) {
     if (validator.isValid(subcategory)) {
       filterQuery["subcategory"] = subcategory;
     }
-    console.log(filterQuery);
+    if (isPublished === "true") {
+      filterQuery.isPublished = true;
+    }
+    if (isPublished === "false") {
+      filterQuery.isPublished = false;
+    }
+
     //filtered blogs are marked isDeleted=true
-    let deleted = await blogModel.updateMany(filterQuery, { isDeleted: true });
+    let deleted = await blogModel.updateMany(filterQuery, {
+      isDeleted: true,
+      deletedAt: Date(),
+    });
+
+    if (deleted.modifiedCount === 0)
+      return res.status(404).send({ msg: "No document found.." });
     res.status(200).send({ msg: "Blogs deleted.." });
   } catch (err) {
     res.status(500).send({ msg: err.message });

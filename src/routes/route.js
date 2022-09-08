@@ -15,7 +15,7 @@ router.post("/authors", authorController.createAuthor);
 router.post("/login", authorController.loginAuthor);
 //Blog api
 router.post("/blogs", auth.Authentication, blogController.createBlog);
-router.get("/blogs", auth.Authentication, blogController.allBlogs);
+router.get("/blogs", auth.Authentication, blogController.getBlogs);
 router.put(
   "/blogs/:blogId",
   auth.Authentication,

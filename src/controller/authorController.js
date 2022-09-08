@@ -19,14 +19,16 @@ const createAuthor = async function (req, res) {
 
     // Validation started & detecting here the falsy values .
     if (!validator.isValid(fname)) {
-      return res
-        .status(400)
-        .send({ status: false, message: "First name is required" });
+      return res.status(400).send({
+        status: false,
+        message: "First name is required,First letter must be capital.",
+      });
     }
     if (!validator.isValid(lname)) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Last name is required" });
+      return res.status(400).send({
+        status: false,
+        message: "Last name is required,First letter must be capital.",
+      });
     }
     if (!validator.isValid(title)) {
       return res
@@ -36,16 +38,11 @@ const createAuthor = async function (req, res) {
     if (!validator.isValidTitle(title)) {
       return res.status(400).send({
         status: false,
-        message: `Title should be among Mr, Mrs, Miss and Mast`,
+        message: `Title should be among Mr, Mrs and Miss`,
       });
     }
-    if (!validator.isValid(email)) {
-      return res
-        .status(400)
-        .send({ status: false, message: `Email is required` });
-    }
     //Email validation whether it is entered perfectly or not.
-    if (!/^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$/.test(email)) {
+    if (!validator.isValidEmail(email)) {
       res.status(400).send({
         status: false,
         message: `Email should be a valid email address`,
@@ -53,10 +50,12 @@ const createAuthor = async function (req, res) {
       return;
     }
 
-    if (!validator.isValid(password)) {
-      return res
-        .status(400)
-        .send({ status: false, message: `Password is required` });
+    if (!validator.isValidPassword(password)) {
+      return res.status(400).send({
+        status: false,
+        message: `Password is required, Please enter At least one upper case,  one lower case English letter, one digit,  one special character and minimum eight in length
+        `,
+      });
     }
     const isEmailAlredyUsed = await authorModel.findOne({ email: email });
     if (isEmailAlredyUsed) {
@@ -89,6 +88,19 @@ const loginAuthor = async function (req, res) {
     }
     //Extract from params
     let { email, password } = requestBody;
+    if (!validator.isValidEmail(email)) {
+      res.status(400).send({
+        status: false,
+        message: `Email is mandatory and provide valid email address`,
+      });
+      return;
+    }
+    if (!validator.isValidPassword(password)) {
+      return res.status(400).send({
+        status: false,
+        message: `Password is required, Please enter At least one upper case,  one lower case English letter, one digit,  one special character and minimum eight in length`,
+      });
+    }
     let validAuthorId = await authorModel
       .findOne(requestBody)
       .select({ _id: 1 });

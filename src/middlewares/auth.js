@@ -1,5 +1,6 @@
 const blogModel = require("../models/blogModel");
 const jwt = require("jsonwebtoken");
+const validator = require("../utils/validator");
 
 const Authentication = async function (req, res, next) {
   ///write your code
@@ -13,7 +14,7 @@ const Authentication = async function (req, res, next) {
       "secretkey",
       function (err, decodedToken1) {
         if (err) {
-          res.status(400).send({ msg: "invalid token" });
+          res.status(401).send({ msg: "invalid token" });
         } else {
           req["x-api-key"] = decodedToken1;
           next();
@@ -28,14 +29,21 @@ const Authentication = async function (req, res, next) {
 const Authorisation = async function (req, res, next) {
   try {
     let decodedToken = req["x-api-key"];
+    //blog id validation pending
+
     let blogId = req.params.blogId;
-    let blog = await blogModel.findById(blogId);
+    if (!validator.isValidObjectId(blogId)) {
+      return res.status(403).send({ msg: " invalid blogId.." });
+    }
+    let blog = await blogModel.findOne({ _id: blogId });
     // console.log(decodedToken, blog);
     if (!blog)
       return res.status(404).send({ msg: "Requested blog not found.." });
-    if (decodedToken.authorId !== blog.authorId.toString())
-      res.status(403).send({ msg: " Not authorised .." });
-    next();
+    if (decodedToken.authorId !== blog.authorId.toString()) {
+      return res.status(403).send({ msg: " Not authorised .." });
+    } else {
+      next();
+    }
   } catch (err) {
     res.status(500).send({ msg: err.message });
   }

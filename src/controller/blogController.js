@@ -4,7 +4,76 @@ const mongoose = require("mongoose");
 const moment = require("moment");
 const validator = require("../utils/validator");
 
-const allBlogs = async function (req, res) {
+const createBlog = async function (req, res) {
+  try {
+    const requestBody = req.body;
+    if (!validator.isValidRequestBody(requestBody)) {
+      return res.status(400).send({
+        status: false,
+        message: "Invalid request parameters. Please provide blog details",
+      });
+    }
+    let decodedToken = req["x-api-key"];
+    //Extract params
+    const { title, body, authorId, tags, category, subcategory, isPublished } =
+      requestBody;
+
+    if (decodedToken.authorId !== authorId.toString())
+      return res.status(403).send({ msg: " Not authorised .." });
+
+    // Validation starts
+    if (!validator.isValid(title)) {
+      return res.status(400).send({
+        status: false,
+        message: "Blog Title is required,First letter must be capital.",
+      });
+    }
+    if (!validator.isValid(body)) {
+      return res.status(400).send({
+        status: false,
+        message: "Blog body is required,First letter must be capital.",
+      });
+    }
+
+    if (!validator.isValidObjectId(authorId)) {
+      return res.status(400).send({
+        status: false,
+        message: `${authorId} is not a valid author id,Author id is required`,
+      });
+    }
+    const findAuthor = await authorModel.findById(authorId);
+    if (!findAuthor) {
+      return res
+        .status(400)
+        .send({ status: false, message: `Author does not exists.` });
+    }
+    if (!validator.isValid(category)) {
+      return res.status(400).send({
+        status: false,
+        message: "Blog category is required,First letter must be capital.",
+      });
+    }
+    if (!validator.isStringsArray(tags)) {
+      return res.status(400).send({
+        status: false,
+        message: "Blog tags is required and it is an array of strings.",
+      });
+    }
+    if (!validator.isStringsArray(subcategory)) {
+      return res.status(400).send({
+        status: false,
+        message: "Blog subcategory is required and it is an array of strings.",
+      });
+    }
+    //After validation blog created
+    let created = await blogModel.create(requestBody);
+    res.status(201).send({ msg: created });
+  } catch (err) {
+    res.status(500).send({ msg: err.message });
+  }
+};
+
+const getBlogs = async function (req, res) {
   try {
     let { authorId, category, tags, subcategory } = req.query;
     // console.log(tags);
@@ -30,30 +99,32 @@ const allBlogs = async function (req, res) {
       res.status(200).send({ status: true, msg: finalFilter });
     }
   } catch (error) {
-    res.status(500).send({ status: false, msg: "server error" });
+    res.status(500).send({ status: false, msg: error.message });
   }
 };
 
 const updateBlog = async function (req, res) {
   try {
     let id = req.params.blogId;
-    if (!mongoose.isValidObjectId(id)) {
-      res.status(400).send({
-        status: false,
-        msg: "invalid blogid  ",
-      });
-    }
     let blog = await blogModel.findById(id);
     if (!blog || blog.isDeleted === true) {
       res.status(404).send({
         status: false,
-        msg: "",
+        msg: "Blog not found..",
       });
     }
-    if (req.body.title) blog.title = req.body.title;
-    if (req.body.body) blog.body = req.body.body;
-    if (req.body.tags.length > 0) blog.tags = [...blog.tags, ...req.body.tags];
-    if (req.body.subcategory.length > 0)
+    const requestBody = req.body;
+    if (!validator.isValidRequestBody(requestBody)) {
+      return res.status(400).send({
+        status: false,
+        message: " Please provide updation details in body",
+      });
+    }
+    if (validator.isValid(req.body.title)) blog.title = req.body.title;
+    if (validator.isValid(req.body.body)) blog.body = req.body.body;
+    if (validator.isStringsArray(req.body.tags))
+      blog.tags = [...blog.tags, ...req.body.tags];
+    if (validator.isStringsArray(req.body.subcategory))
       blog.subcategory = [...blog.subcategory, ...req.body.subcategory];
     blog.isPublished = true;
     blog.publishedAt = moment();
@@ -61,61 +132,6 @@ const updateBlog = async function (req, res) {
       new: true,
     });
     res.status(200).send({ status: true, msg: blog2 });
-  } catch (err) {
-    res.status(500).send({ msg: err.message });
-  }
-};
-
-const createBlog = async function (req, res) {
-  try {
-    const requestBody = req.body;
-    if (!validator.isValidRequestBody(requestBody)) {
-      return res.status(400).send({
-        status: false,
-        message: "Invalid request parameters. Please provide blog details",
-      });
-    }
-
-    //Extract params
-    const { title, body, authorId, tags, category, subcategory, isPublished } =
-      requestBody;
-
-    // Validation starts
-    if (!validator.isValid(title)) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Blog Title is required" });
-    }
-    if (!validator.isValid(body)) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Blog body is required" });
-    }
-    if (!validator.isValid(authorId)) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Author id is required" });
-    }
-    if (!validator.isValidObjectId(authorId)) {
-      return res.status(400).send({
-        status: false,
-        message: `${authorId} is not a valid author id`,
-      });
-    }
-    const findAuthor = await authorModel.findById(authorId);
-    if (!findAuthor) {
-      return res
-        .status(400)
-        .send({ status: false, message: `Author does not exists.` });
-    }
-    if (!validator.isValid(category)) {
-      return res
-        .status(400)
-        .send({ status: false, message: "Blog category is required" });
-    }
-    //After validation blog created
-    let created = await blogModel.create(requestBody);
-    res.status(201).send({ msg: created });
   } catch (err) {
     res.status(500).send({ msg: err.message });
   }
@@ -176,13 +192,16 @@ const deleteBlogByQuery = async function (req, res) {
     const { authorId, category, tags, subcategory, isPublished } = queryParams;
 
     if (
-      validator.isValid(authorId) &&
       validator.isValidObjectId(authorId) &&
       authorId === req["x-api-key"].authorId
     ) {
-      filterQuery["authorId"] = authorId;
-    } else {
       filterQuery["authorId"] = req["x-api-key"].authorId;
+    } else {
+      return res
+        .status(401)
+        .send({
+          msg: `You are not authorized to delete blogs of this authorId=${authorId}`,
+        });
     }
     if (validator.isValid(category)) {
       filterQuery["category"] = category;
@@ -206,9 +225,11 @@ const deleteBlogByQuery = async function (req, res) {
       deletedAt: Date(),
     });
 
-    if (deleted.modifiedCount === 0)
+    if (deleted.modifiedCount === 0) {
       return res.status(404).send({ msg: "No document found.." });
-    res.status(200).send({ msg: "Blogs deleted.." });
+    } else {
+      res.status(200).send({ msg: "Blogs deleted.." });
+    }
   } catch (err) {
     res.status(500).send({ msg: err.message });
   }
@@ -216,7 +237,7 @@ const deleteBlogByQuery = async function (req, res) {
 module.exports = {
   createBlog,
   updateBlog,
-  allBlogs,
+  getBlogs,
   deleteBlogById,
   deleteBlogByQuery,
 };

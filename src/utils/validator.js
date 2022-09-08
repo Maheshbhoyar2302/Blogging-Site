@@ -1,13 +1,28 @@
 const mongoose = require("mongoose");
 
 const isValid = function (value) {
-  if (typeof value === "undefined" || value === null || value.length === 0)
-    return false;
-  return true;
+  if (
+    typeof value === "string" &&
+    value.length > 0 &&
+    /^[a-zA-Z ]*$/.test(value)
+  )
+    return true;
+  return false;
+};
+const isValidPassword = function (value) {
+  if (
+    /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/.test(value)
+  )
+    return true;
+  return false;
+};
+const isValidEmail = function (value) {
+  if (/^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$/.test(value)) return true;
+  return false;
 };
 
 const isValidTitle = function (title) {
-  return ["Mr", "Mrs", "Miss", "Mast"].includes(title);
+  return ["Mr", "Mrs", "Miss"].includes(title);
 };
 
 const isValidRequestBody = function (requestBody) {
@@ -18,4 +33,15 @@ const isValidObjectId = function (objectId) {
   return mongoose.isValidObjectId(objectId);
 };
 
-module.exports = { isValid, isValidTitle, isValidRequestBody, isValidObjectId };
+const isStringsArray = (arr) =>
+  arr.every((i) => typeof i === "string" && i.length > 0);
+
+module.exports = {
+  isValid,
+  isValidTitle,
+  isValidRequestBody,
+  isValidObjectId,
+  isValidPassword,
+  isValidEmail,
+  isStringsArray,
+};

@@ -21,13 +21,13 @@ const createAuthor = async function (req, res) {
     if (!validator.isValid(fname)) {
       return res.status(400).send({
         status: false,
-        message: "First name is required,First letter must be capital.",
+        message: "First name is required,only alphbets allowed.",
       });
     }
     if (!validator.isValid(lname)) {
       return res.status(400).send({
         status: false,
-        message: "Last name is required,First letter must be capital.",
+        message: "Last name is required,only alphbets allowed.",
       });
     }
     if (!validator.isValid(title)) {

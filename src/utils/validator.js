@@ -4,7 +4,7 @@ const isValid = function (value) {
   if (
     typeof value === "string" &&
     value.length > 0 &&
-    /^[a-zA-Z ]*$/.test(value)
+    /^[a-zA-Z0-9 ]*$/.test(value)
   )
     return true;
   return false;
@@ -33,8 +33,12 @@ const isValidObjectId = function (objectId) {
   return mongoose.isValidObjectId(objectId);
 };
 
-const isStringsArray = (arr) =>
-  arr.every((i) => typeof i === "string" && i.length > 0);
+const isStringsArray = function (arr) {
+  for (let i = 0; i < arr.length; i++) {
+    if (typeof i !== "string" && i.length === 0) return false;
+  }
+  return true;
+};
 
 module.exports = {
   isValid,

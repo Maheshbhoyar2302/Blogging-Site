@@ -3,7 +3,6 @@ const jwt = require("jsonwebtoken");
 const validator = require("../utils/validator");
 
 const Authentication = async function (req, res, next) {
-  ///write your code
   try {
     let token = req.headers["x-api-key"];
     if (!token) {
@@ -29,14 +28,14 @@ const Authentication = async function (req, res, next) {
 const Authorisation = async function (req, res, next) {
   try {
     let decodedToken = req["x-api-key"];
-    //blog id validation pending
+    //blog id validation
 
     let blogId = req.params.blogId;
     if (!validator.isValidObjectId(blogId)) {
       return res.status(403).send({ msg: " invalid blogId.." });
     }
     let blog = await blogModel.findOne({ _id: blogId });
-    // console.log(decodedToken, blog);
+
     if (!blog)
       return res.status(404).send({ msg: "Requested blog not found.." });
     if (decodedToken.authorId !== blog.authorId.toString()) {

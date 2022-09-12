@@ -18,16 +18,18 @@ const createAuthor = async function (req, res) {
     const { fname, lname, title, email, password } = requestBody;
 
     // Validation started & detecting here the falsy values .
-    if (!validator.isValid(fname)) {
+    if (!validator.isValidName(fname)) {
       return res.status(400).send({
         status: false,
-        message: "First name is required,only alphbets allowed.",
+        message:
+          "First name is required,First character must be capital and only alphbets allowed.",
       });
     }
-    if (!validator.isValid(lname)) {
+    if (!validator.isValidName(lname)) {
       return res.status(400).send({
         status: false,
-        message: "Last name is required,only alphbets allowed.",
+        message:
+          "Last name is required,First character must be capital and only alphbets allowed.",
       });
     }
     if (!validator.isValid(title)) {
@@ -43,9 +45,9 @@ const createAuthor = async function (req, res) {
     }
     //Email validation whether it is entered perfectly or not.
     if (!validator.isValidEmail(email)) {
-      res.status(400).send({
+      return res.status(400).send({
         status: false,
-        message: `Email should be a valid email address`,
+        message: `Email is required,Email should be a valid email address`,
       });
       return;
     }
@@ -67,13 +69,13 @@ const createAuthor = async function (req, res) {
     //validation Ends
     //author created
     const newAuthor = await authorModel.create(requestBody);
-    res.status(201).send({
+    return res.status(201).send({
       status: true,
       message: `Author created successfully`,
       data: newAuthor,
     });
   } catch (error) {
-    res.status(500).send({ status: false, Error: error.message });
+    return res.status(500).send({ status: false, Error: error.message });
   }
 };
 
@@ -89,7 +91,7 @@ const loginAuthor = async function (req, res) {
     //Extract from params
     let { email, password } = requestBody;
     if (!validator.isValidEmail(email)) {
-      res.status(400).send({
+      return res.status(400).send({
         status: false,
         message: `Email is mandatory and provide valid email address`,
       });
@@ -114,13 +116,13 @@ const loginAuthor = async function (req, res) {
       },
       "secretkey"
     );
-    res.status(200).send({
+    return res.status(200).send({
       status: true,
       message: "Author login successfully",
       data: { token: token },
     });
   } catch (error) {
-    res.status(500).send({ status: false, Error: error.message });
+    return res.status(500).send({ status: false, Error: error.message });
   }
 };
 

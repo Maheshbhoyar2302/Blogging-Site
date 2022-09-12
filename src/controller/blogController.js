@@ -17,70 +17,71 @@ const createBlog = async function (req, res) {
     //Extract params
     const { title, body, authorId, tags, category, subcategory, isPublished } =
       requestBody;
-
-    if (decodedToken.authorId !== authorId.toString())
-      return res.status(403).send({ msg: " Not authorised .." });
+    if (authorId) {
+      if (!validator.isValidObjectId(authorId)) {
+        return res.status(403).send({ msg: " invalid authorId.." });
+      }
+      if (decodedToken.authorId !== authorId.toString())
+        return res.status(403).send({ msg: " Not authorised .." });
+    } else {
+      return res.status(400).send({
+        status: false,
+        message: "Blog authorid is required",
+      });
+    }
 
     // Validation starts
     if (!validator.isValid(title)) {
       return res.status(400).send({
         status: false,
-        message: "Blog Title is required,only alphbets allowed.",
+        message:
+          "Blog Title is required and first character must be alphabet or number as string.",
       });
     }
     if (!validator.isValid(body)) {
       return res.status(400).send({
         status: false,
-        message: "Blog body is required,only alphbets allowed.",
+        message:
+          "Blog body is required and first character must be alphabet or number as string.",
       });
-    }
-
-    if (!validator.isValidObjectId(authorId)) {
-      return res.status(400).send({
-        status: false,
-        message: `${authorId} is not a valid author id,Author id is required`,
-      });
-    }
-    const findAuthor = await authorModel.findById(authorId);
-    if (!findAuthor) {
-      return res
-        .status(400)
-        .send({ status: false, message: `Author does not exists.` });
     }
     if (!validator.isValid(category)) {
       return res.status(400).send({
         status: false,
-        message: "Blog category is required,only alphbets allowed.",
+        message:
+          "Blog category is required, and first character must be alphabet or number as string.",
       });
     }
-    if (tags.length > 0) {
+    if (tags) {
       if (!validator.isStringsArray(tags)) {
         return res.status(400).send({
           status: false,
-          message: "Blog tags is an array of strings.",
+          message:
+            "Blog tags is an array of strings and don't provide empty string in array.",
         });
       }
     }
-    if (subcategory.length > 0) {
+    if (subcategory) {
       if (!validator.isStringsArray(subcategory)) {
         return res.status(400).send({
           status: false,
-          message: "Blog subcategory is an array of strings.",
+          message:
+            "Blog subcategory is an array of strings and don't provide empty string in array.",
         });
       }
     }
     //After validation blog created
     let created = await blogModel.create(requestBody);
-    res.status(201).send({ msg: created });
+    return res.status(201).send({ msg: created });
   } catch (err) {
-    res.status(500).send({ msg: err.message });
+    return res.status(500).send({ msg: err.message });
   }
 };
 
 const getBlogs = async function (req, res) {
   try {
     let { authorId, category, tags, subcategory } = req.query;
-    console.log(authorId);
+    // console.log(authorId);
     let query = {};
     if (authorId) {
       if (!validator.isValidObjectId(authorId)) {
@@ -92,7 +93,7 @@ const getBlogs = async function (req, res) {
     if (category != null) query.category = category;
     if (tags != null) query.tags = tags;
     if (subcategory != null) query.subcategory = subcategory;
-
+    query.isDeleted = false;
     let totalBlogs = await blogModel.find({
       isDeleted: false,
       isPublished: true,
@@ -103,13 +104,13 @@ const getBlogs = async function (req, res) {
         .status(404)
         .send({ status: false, msg: "None of the Blogs are Published" });
     } else if (Object.keys(query).length === 0) {
-      res.status(200).send({ status: true, msg: totalBlogs });
+      return res.status(200).send({ status: true, msg: totalBlogs });
     } else {
       let finalFilter = await blogModel.find(query);
-      res.status(200).send({ status: true, msg: finalFilter });
+      return res.status(200).send({ status: true, msg: finalFilter });
     }
   } catch (error) {
-    res.status(500).send({ status: false, msg: error.message });
+    return res.status(500).send({ status: false, msg: error.message });
   }
 };
 
@@ -118,7 +119,7 @@ const updateBlog = async function (req, res) {
     let id = req.params.blogId;
     let blog = await blogModel.findById(id);
     if (!blog || blog.isDeleted === true) {
-      res.status(404).send({
+      return res.status(404).send({
         status: false,
         msg: "Blog not found..",
       });
@@ -132,21 +133,23 @@ const updateBlog = async function (req, res) {
     }
     if (req.body.title) {
       if (validator.isValid(req.body.title)) {
-        blog.title = req.body.title;
+        blog.title = req.body.title.trim();
       } else {
         return res.status(400).send({
           status: false,
-          message: "Only alphbets allowed.",
+          message:
+            "First character of title must be alphabet or number as string.",
         });
       }
     }
     if (req.body.body) {
       if (validator.isValid(req.body.body)) {
-        blog.body = req.body.body;
+        blog.body = req.body.body.trim();
       } else {
         return res.status(400).send({
           status: false,
-          message: "Only alphbets allowed.",
+          message:
+            "First character of body must be alphabet or number as stirng.",
         });
       }
     }
@@ -163,9 +166,9 @@ const updateBlog = async function (req, res) {
     let blog2 = await blogModel.findByIdAndUpdate({ _id: id }, blog, {
       new: true,
     });
-    res.status(200).send({ status: true, msg: blog2 });
+    return res.status(200).send({ status: true, msg: blog2 });
   } catch (err) {
-    res.status(500).send({ msg: err.message });
+    return res.status(500).send({ msg: err.message });
   }
 };
 
@@ -188,7 +191,7 @@ const deleteBlogById = async function (req, res) {
         { isDeleted: true, deletedAt: Date() },
         { new: true }
       );
-      res.status(200).send({
+      return res.status(200).send({
         status: true,
         message: "successfully deleted blog",
       });
@@ -198,7 +201,7 @@ const deleteBlogById = async function (req, res) {
         .send({ status: false, msg: "Blog already deleted" });
     }
   } catch (err) {
-    res.status(500).send({ status: false, Error: err.message });
+    return res.status(500).send({ status: false, Error: err.message });
   }
 };
 
@@ -219,16 +222,19 @@ const deleteBlogByQuery = async function (req, res) {
     }
 
     const { authorId, category, tags, subcategory, isPublished } = queryParams;
-
-    if (
-      validator.isValidObjectId(authorId) &&
-      authorId === req["x-api-key"].authorId
-    ) {
-      filterQuery["authorId"] = req["x-api-key"].authorId;
+    if (authorId) {
+      if (
+        validator.isValidObjectId(authorId) &&
+        authorId === req["x-api-key"].authorId
+      ) {
+        filterQuery["authorId"] = req["x-api-key"].authorId;
+      } else {
+        return res.status(401).send({
+          msg: `You are not authorized to delete blogs of this authorId=${authorId}`,
+        });
+      }
     } else {
-      return res.status(401).send({
-        msg: `You are not authorized to delete blogs of this authorId=${authorId}`,
-      });
+      filterQuery["authorId"] = req["x-api-key"].authorId;
     }
     if (validator.isValid(category)) {
       filterQuery["category"] = category;
@@ -255,10 +261,10 @@ const deleteBlogByQuery = async function (req, res) {
     if (deleted.modifiedCount === 0) {
       return res.status(404).send({ msg: "No document found.." });
     } else {
-      res.status(200).send({ msg: "Blogs deleted.." });
+      return res.status(200).send({ msg: "Blogs deleted.." });
     }
   } catch (err) {
-    res.status(500).send({ msg: err.message });
+    return res.status(500).send({ msg: err.message });
   }
 };
 module.exports = {

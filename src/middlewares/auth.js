@@ -13,7 +13,7 @@ const Authentication = async function (req, res, next) {
       "secretkey",
       function (err, decodedToken1) {
         if (err) {
-          res.status(401).send({ msg: "invalid token" });
+          return res.status(401).send({ msg: "invalid token" });
         } else {
           req["x-api-key"] = decodedToken1;
           next();
@@ -21,7 +21,7 @@ const Authentication = async function (req, res, next) {
       }
     );
   } catch (error) {
-    res.status(500).send({ msg: error.message });
+    return res.status(500).send({ msg: error.message });
   }
 };
 
@@ -44,7 +44,7 @@ const Authorisation = async function (req, res, next) {
       next();
     }
   } catch (err) {
-    res.status(500).send({ msg: err.message });
+    return res.status(500).send({ msg: err.message });
   }
 };
 

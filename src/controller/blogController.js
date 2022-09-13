@@ -19,10 +19,10 @@ const createBlog = async function (req, res) {
       requestBody;
     if (authorId) {
       if (!validator.isValidObjectId(authorId)) {
-        return res.status(403).send({ msg: " invalid authorId.." });
+        return res.status(403).send({ message: " invalid authorId.." });
       }
       if (decodedToken.authorId !== authorId.toString())
-        return res.status(403).send({ msg: " Not authorised .." });
+        return res.status(403).send({ message: " Not authorised .." });
     } else {
       return res.status(400).send({
         status: false,
@@ -34,22 +34,19 @@ const createBlog = async function (req, res) {
     if (!validator.isValid(title)) {
       return res.status(400).send({
         status: false,
-        message:
-          "Blog Title is required and first character must be alphabet or number as string.",
+        message: "Blog Title must be string.",
       });
     }
     if (!validator.isValid(body)) {
       return res.status(400).send({
         status: false,
-        message:
-          "Blog body is required and first character must be alphabet or number as string.",
+        message: "Blog body must be string.",
       });
     }
     if (!validator.isValid(category)) {
       return res.status(400).send({
         status: false,
-        message:
-          "Blog category is required, and first character must be alphabet or number as string.",
+        message: "Blog category must be string.",
       });
     }
     if (tags) {
@@ -61,6 +58,7 @@ const createBlog = async function (req, res) {
         });
       }
     }
+
     if (subcategory) {
       if (!validator.isStringsArray(subcategory)) {
         return res.status(400).send({
@@ -72,9 +70,13 @@ const createBlog = async function (req, res) {
     }
     //After validation blog created
     let created = await blogModel.create(requestBody);
-    return res.status(201).send({ msg: created });
+    return res.status(201).send({
+      status: true,
+      message: "Blog created successfully..",
+      data: created,
+    });
   } catch (err) {
-    return res.status(500).send({ msg: err.message });
+    return res.status(500).send({ message: err.message });
   }
 };
 
@@ -85,7 +87,7 @@ const getBlogs = async function (req, res) {
     let query = {};
     if (authorId) {
       if (!validator.isValidObjectId(authorId)) {
-        return res.status(403).send({ msg: " invalid authorId.." });
+        return res.status(403).send({ message: " invalid authorId.." });
       } else {
         query.authorId = authorId;
       }
@@ -104,13 +106,13 @@ const getBlogs = async function (req, res) {
         .status(404)
         .send({ status: false, msg: "None of the Blogs are Published" });
     } else if (Object.keys(query).length === 0) {
-      return res.status(200).send({ status: true, msg: totalBlogs });
+      return res.status(200).send({ status: true, data: totalBlogs });
     } else {
       let finalFilter = await blogModel.find(query);
-      return res.status(200).send({ status: true, msg: finalFilter });
+      return res.status(200).send({ status: true, data: finalFilter });
     }
   } catch (error) {
-    return res.status(500).send({ status: false, msg: error.message });
+    return res.status(500).send({ status: false, message: error.message });
   }
 };
 
@@ -121,7 +123,7 @@ const updateBlog = async function (req, res) {
     if (!blog || blog.isDeleted === true) {
       return res.status(404).send({
         status: false,
-        msg: "Blog not found..",
+        message: "Blog not found..",
       });
     }
     const requestBody = req.body;
@@ -137,8 +139,7 @@ const updateBlog = async function (req, res) {
       } else {
         return res.status(400).send({
           status: false,
-          message:
-            "First character of title must be alphabet or number as string.",
+          message: "Title must be string.",
         });
       }
     }
@@ -148,27 +149,50 @@ const updateBlog = async function (req, res) {
       } else {
         return res.status(400).send({
           status: false,
-          message:
-            "First character of body must be alphabet or number as stirng.",
+          message: " body must be string.",
+        });
+      }
+    }
+    if (req.body.category) {
+      if (validator.isValid(req.body.category)) {
+        blog.category = req.body.category.trim();
+      } else {
+        return res.status(400).send({
+          status: false,
+          message: "category must be string.",
         });
       }
     }
     if (req.body.tags) {
-      if (validator.isStringsArray(req.body.tags))
+      if (validator.isStringsArray(req.body.tags)) {
         blog.tags = [...blog.tags, ...req.body.tags];
+      } else {
+        return res.status(400).send({
+          status: false,
+          message: "tags must be array of string.",
+        });
+      }
     }
     if (req.body.subcategory) {
-      if (validator.isStringsArray(req.body.subcategory))
+      if (validator.isStringsArray(req.body.subcategory)) {
         blog.subcategory = [...blog.subcategory, ...req.body.subcategory];
+      } else {
+        return res.status(400).send({
+          status: false,
+          message: "subcategory must be array of string.",
+        });
+      }
     }
     blog.isPublished = true;
     blog.publishedAt = moment();
     let blog2 = await blogModel.findByIdAndUpdate({ _id: id }, blog, {
       new: true,
     });
-    return res.status(200).send({ status: true, msg: blog2 });
+    return res
+      .status(200)
+      .send({ status: true, message: "successfully updated", data: blog2 });
   } catch (err) {
-    return res.status(500).send({ msg: err.message });
+    return res.status(500).send({ message: err.message });
   }
 };
 
@@ -193,12 +217,12 @@ const deleteBlogById = async function (req, res) {
       );
       return res.status(200).send({
         status: true,
-        message: "successfully deleted blog",
+        //message: "successfully deleted blog",
       });
     } else {
       return res
         .status(404)
-        .send({ status: false, msg: "Blog already deleted" });
+        .send({ status: false, message: "Blog already deleted" });
     }
   } catch (err) {
     return res.status(500).send({ status: false, Error: err.message });
@@ -259,9 +283,11 @@ const deleteBlogByQuery = async function (req, res) {
     });
 
     if (deleted.modifiedCount === 0) {
-      return res.status(404).send({ msg: "No document found.." });
+      return res
+        .status(404)
+        .send({ status: false, message: "No document found.." });
     } else {
-      return res.status(200).send({ msg: "Blogs deleted.." });
+      return res.status(200).send({ status: true });
     }
   } catch (err) {
     return res.status(500).send({ msg: err.message });

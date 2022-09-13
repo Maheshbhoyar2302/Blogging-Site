@@ -3,19 +3,14 @@ const mongoose = require("mongoose");
 const isValidName = function (value) {
   if (
     typeof value === "string" &&
-    value.length > 0 &&
+    value.trim().length > 0 &&
     /^[A-Z]+[a-z]*$/.test(value)
   )
     return true;
   return false;
 };
 const isValid = function (value) {
-  if (
-    typeof value === "string" &&
-    value.length > 0 &&
-    /^[A-Za-z0-9]+[a-zA-Z0-9 .,]*$/.test(value)
-  )
-    return true;
+  if (typeof value === "string" && value.trim().length > 0) return true;
   return false;
 };
 const isValidPassword = function (value) {
@@ -43,8 +38,9 @@ const isValidObjectId = function (objectId) {
 };
 
 const isStringsArray = function (arr) {
+  if (!Array.isArray(arr)) return false;
   for (let i = 0; i < arr.length; i++) {
-    if (typeof arr[i] !== "string" || arr[i].length === 0) return false;
+    if (typeof arr[i] !== "string" || arr[i].trim().length === 0) return false;
   }
   return true;
 };
@@ -60,3 +56,4 @@ module.exports = {
   isValidName,
 };
 
+// console.log(isStringsArray(undefined));
